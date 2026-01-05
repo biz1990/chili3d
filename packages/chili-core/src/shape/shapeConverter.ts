@@ -14,4 +14,6 @@ export interface IShapeConverter {
     convertToBrep(shape: IShape): Result<string>;
     convertFromBrep(brep: string): Result<IShape>;
     convertFromSTL(document: IDocument, stl: Uint8Array): Result<FolderNode>;
+    convertFromDXF(document: IDocument, dxf: Uint8Array): Result<FolderNode>;
+    convertToDXF(...shapes: IShape[]): Result<string>;
 }
