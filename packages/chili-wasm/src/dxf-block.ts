@@ -1,7 +1,7 @@
 // Part of Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
 
-import { Result, type IShape, type XYZ } from "chili-core";
+import { type IShape, Result, XYZ } from "chili-core";
 import { DxfEditor } from "./dxf-editor";
 import { ShapeFactory } from "./factory";
 
@@ -41,7 +41,7 @@ export class DxfBlockManager {
     /**
      * Create a new block from shapes
      */
-    createBlock(name: string, shapes: IShape[], origin: XYZ = { x: 0, y: 0, z: 0 }): Result<DxfBlock> {
+    createBlock(name: string, shapes: IShape[], origin: XYZ = new XYZ(0, 0, 0)): Result<DxfBlock> {
         if (this.blocks.has(name)) {
             return Result.err(`Block with name '${name}' already exists`);
         }
@@ -50,7 +50,7 @@ export class DxfBlockManager {
             name,
             shapes: [...shapes], // Copy shapes
             origin,
-            isExploded: false
+            isExploded: false,
         };
 
         this.blocks.set(name, block);
@@ -76,14 +76,19 @@ export class DxfBlockManager {
      */
     removeBlock(name: string): boolean {
         // Remove all instances of this block first
-        this.instances = this.instances.filter(instance => instance.blockName !== name);
+        this.instances = this.instances.filter((instance) => instance.blockName !== name);
         return this.blocks.delete(name);
     }
 
     /**
      * Insert a block instance at a specific position
      */
-    insertBlock(blockName: string, position: XYZ, scale: XYZ = { x: 1, y: 1, z: 1 }, rotation: number = 0): Result<DxfBlockInstance> {
+    insertBlock(
+        blockName: string,
+        position: XYZ,
+        scale: XYZ = new XYZ(1, 1, 1),
+        rotation: number = 0,
+    ): Result<DxfBlockInstance> {
         const block = this.blocks.get(blockName);
         if (!block) {
             return Result.err(`Block '${blockName}' not found`);
@@ -119,7 +124,7 @@ export class DxfBlockManager {
             position,
             scale,
             rotation,
-            shapes: transformedShapes
+            shapes: transformedShapes,
         };
 
         this.instances.push(instance);
@@ -135,7 +140,7 @@ export class DxfBlockManager {
         }
 
         const instance = this.instances[instanceIndex];
-        
+
         // Mark the original block as exploded if this is the first instance
         const block = this.blocks.get(instance.blockName);
         if (block && !block.isExploded) {
@@ -157,7 +162,7 @@ export class DxfBlockManager {
         }
 
         const allShapes: IShape[] = [];
-        
+
         // Process all instances in reverse order to avoid index issues
         for (let i = this.instances.length - 1; i >= 0; i--) {
             if (this.instances[i].blockName === blockName) {
@@ -183,7 +188,7 @@ export class DxfBlockManager {
      * Get instances of a specific block
      */
     getBlockInstances(blockName: string): DxfBlockInstance[] {
-        return this.instances.filter(instance => instance.blockName === blockName);
+        return this.instances.filter((instance) => instance.blockName === blockName);
     }
 
     /**
@@ -200,14 +205,19 @@ export class DxfBlockManager {
     /**
      * Update a block instance transformation
      */
-    updateInstanceTransformation(index: number, position: XYZ, scale: XYZ, rotation: number): Result<DxfBlockInstance> {
+    updateInstanceTransformation(
+        index: number,
+        position: XYZ,
+        scale: XYZ,
+        rotation: number,
+    ): Result<DxfBlockInstance> {
         if (index < 0 || index >= this.instances.length) {
             return Result.err("Invalid block instance index");
         }
 
         const instance = this.instances[index];
         const block = this.blocks.get(instance.blockName);
-        
+
         if (!block) {
             return Result.err(`Block '${instance.blockName}' not found`);
         }
@@ -269,11 +279,11 @@ export class DxfBlockManager {
      * Get block statistics
      */
     getBlockStats(): { name: string; instanceCount: number; shapeCount: number; isExploded: boolean }[] {
-        return Array.from(this.blocks.values()).map(block => ({
+        return Array.from(this.blocks.values()).map((block) => ({
             name: block.name,
-            instanceCount: this.instances.filter(instance => instance.blockName === block.name).length,
+            instanceCount: this.instances.filter((instance) => instance.blockName === block.name).length,
             shapeCount: block.shapes.length,
-            isExploded: block.isExploded
+            isExploded: block.isExploded,
         }));
     }
 }

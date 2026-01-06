@@ -1,10 +1,9 @@
 // Part of the Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
 
-import { Result, type IDocument, type IShape } from "chili-core";
+import { type IDocument, type IShape, Result, ShapeType } from "chili-core";
 import { ShapeFactory } from "./factory";
 import { OcctHelper } from "./helper";
-import * as wasm from "./wasm";
 
 /**
  * DXF File I/O Operations
@@ -19,12 +18,15 @@ export class DxfIO {
     /**
      * Open a DXF file from file path or File object
      */
-    async openDxf(document: IDocument, dxfSource: string | File): Promise<Result<{ shapes: IShape[], fileName: string }>> {
+    async openDxf(
+        document: IDocument,
+        dxfSource: string | File,
+    ): Promise<Result<{ shapes: IShape[]; fileName: string }>> {
         try {
             let dxfBytes: Uint8Array;
             let fileName: string;
 
-            if (typeof dxfSource === 'string') {
+            if (typeof dxfSource === "string") {
                 // Load from file path
                 const response = await fetch(dxfSource);
                 if (!response.ok) {
@@ -32,7 +34,7 @@ export class DxfIO {
                 }
                 const arrayBuffer = await response.arrayBuffer();
                 dxfBytes = new Uint8Array(arrayBuffer);
-                fileName = dxfSource.split('/').pop() || 'unknown.dxf';
+                fileName = dxfSource.split("/").pop() || "unknown.dxf";
             } else {
                 // Load from File object
                 fileName = dxfSource.name;
@@ -41,11 +43,11 @@ export class DxfIO {
 
             // Import DXF using the converter
             const importResult = this.factory.converter.convertFromDXF(document, dxfBytes);
-            
+
             if (importResult.isOk) {
                 return Result.ok({
                     shapes: this.extractShapesFromFolder(importResult.value),
-                    fileName
+                    fileName,
                 });
             } else {
                 return Result.err(`Failed to import DXF: ${importResult.error}`);
@@ -56,7 +58,7 @@ export class DxfIO {
     }
 
     /**
-     * Reload a DXF file (re-import the same file)
+     * Reload a DXF file (re-imports the same file)
      */
     async reloadDxf(document: IDocument, fileName: string): Promise<Result<IShape[]>> {
         try {
@@ -68,7 +70,7 @@ export class DxfIO {
             const dxfBytes = new Uint8Array(arrayBuffer);
 
             const importResult = this.factory.converter.convertFromDXF(document, dxfBytes);
-            
+
             if (importResult.isOk) {
                 return Result.ok(this.extractShapesFromFolder(importResult.value));
             } else {
@@ -85,18 +87,18 @@ export class DxfIO {
     async saveDxf(shapes: IShape[], fileName: string): Promise<Result<string>> {
         try {
             const exportResult = this.factory.converter.convertToDXF(...shapes);
-            
+
             if (!exportResult.isOk) {
                 return Result.err(`Failed to export DXF: ${exportResult.error}`);
             }
 
             const dxfContent = exportResult.value;
-            
+
             // Create blob and download
-            const blob = new Blob([dxfContent], { type: 'application/dxf' });
+            const blob = new Blob([dxfContent], { type: "application/dxf" });
             const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
+
+            const link = document.createElement("a");
             link.href = url;
             link.download = fileName;
             document.body.appendChild(link);
@@ -116,26 +118,26 @@ export class DxfIO {
     async saveAsDxf(shapes: IShape[]): Promise<Result<string>> {
         try {
             const exportResult = this.factory.converter.convertToDXF(...shapes);
-            
+
             if (!exportResult.isOk) {
                 return Result.err(`Failed to export DXF: ${exportResult.error}`);
             }
 
             const dxfContent = exportResult.value;
-            
+
             // Create blob and trigger save dialog
-            const blob = new Blob([dxfContent], { type: 'application/dxf' });
+            const blob = new Blob([dxfContent], { type: "application/dxf" });
             const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
+
+            const link = document.createElement("a");
             link.href = url;
-            link.download = ''; // Empty filename triggers save dialog
+            link.download = ""; // Empty filename triggers save dialog
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            return Result.ok('DXF file saved successfully');
+            return Result.ok("DXF file saved successfully");
         } catch (error) {
             return Result.err(`Error saving DXF file: ${error}`);
         }
@@ -147,26 +149,26 @@ export class DxfIO {
     async exportAsWireframe(shapes: IShape[], fileName: string): Promise<Result<string>> {
         try {
             // Extract only edges from shapes
-            const edges: IShape[] = [];
-            
+            const shapeEdges: IShape[] = [];
+
             for (const shape of shapes) {
                 const extractedEdges = this.extractEdgesFromShape(shape);
-                edges.push(...extractedEdges);
+                shapeEdges.push(...extractedEdges);
             }
 
-            const exportResult = this.factory.converter.convertToDXF(...edges);
-            
+            const exportResult = this.factory.converter.convertToDXF(...shapeEdges);
+
             if (!exportResult.isOk) {
                 return Result.err(`Failed to export wireframe DXF: ${exportResult.error}`);
             }
 
             const dxfContent = exportResult.value;
-            
+
             // Create blob and download
-            const blob = new Blob([dxfContent], { type: 'application/dxf' });
+            const blob = new Blob([dxfContent], { type: "application/dxf" });
             const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
+
+            const link = document.createElement("a");
             link.href = url;
             link.download = fileName;
             document.body.appendChild(link);
@@ -187,25 +189,25 @@ export class DxfIO {
         try {
             // Convert shapes to mesh representation (3DFACE entities)
             const meshShapes: IShape[] = [];
-            
+
             for (const shape of shapes) {
                 const meshFaces = this.convertShapeToMeshFaces(shape);
                 meshShapes.push(...meshFaces);
             }
 
             const exportResult = this.factory.converter.convertToDXF(...meshShapes);
-            
+
             if (!exportResult.isOk) {
                 return Result.err(`Failed to export mesh DXF: ${exportResult.error}`);
             }
 
             const dxfContent = exportResult.value;
-            
+
             // Create blob and download
-            const blob = new Blob([dxfContent], { type: 'application/dxf' });
+            const blob = new Blob([dxfContent], { type: "application/dxf" });
             const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
+
+            const link = document.createElement("a");
             link.href = url;
             link.download = fileName;
             document.body.appendChild(link);
@@ -224,20 +226,20 @@ export class DxfIO {
      */
     private extractShapesFromFolder(folderNode: any): IShape[] {
         const shapes: IShape[] = [];
-        
+
         // Recursively extract all shapes from the folder structure
         const extractFromNode = (node: any) => {
             if (node.shape && !node.shape.isNull()) {
                 shapes.push(OcctHelper.wrapShape(node.shape));
             }
-            
+
             if (node.children && node.children.length > 0) {
                 for (const child of node.children) {
                     extractFromNode(child);
                 }
             }
         };
-        
+
         extractFromNode(folderNode);
         return shapes;
     }
@@ -246,20 +248,18 @@ export class DxfIO {
      * Helper method to extract edges from a shape
      */
     private extractEdgesFromShape(shape: IShape): IShape[] {
-        const edges: IShape[] = [];
-        const occShape = (shape as any).shape;
-        
-        // Use OpenCascade explorer to find all edges
-        const explorer = new (wasm as any).TopExp_Explorer(occShape, (wasm as any).TopAbs_ShapeEnum.TopAbs_EDGE);
-        
-        while (explorer.More()) {
-            const edge = explorer.Current();
-            edges.push(OcctHelper.wrapShape(edge));
-            explorer.Next();
+        const edgeList: IShape[] = [];
+
+        // Note: TopExp_Explorer and TopAbs_ShapeEnum are not exported from WASM module
+        // For now, just return the shape as is if it's an edge
+        if (shape.shapeType === ShapeType.Edge) {
+            edgeList.push(shape);
+        } else if (shape.shapeType === ShapeType.Wire) {
+            // For wires, just return the wire as is
+            edgeList.push(shape);
         }
-        
-        explorer.delete();
-        return edges;
+
+        return edgeList;
     }
 
     /**
@@ -267,26 +267,19 @@ export class DxfIO {
      */
     private convertShapeToMeshFaces(shape: IShape): IShape[] {
         const meshFaces: IShape[] = [];
-        const occShape = (shape as any).shape;
-        
+
         // For faces, convert to 3DFACE entities
-        if (shape.shapeType === "face") {
+        if (shape.shapeType === ShapeType.Face) {
             // Convert face to 3DFACE representation
             // This is a simplified implementation
             meshFaces.push(shape);
-        } else if (shape.shapeType === "solid") {
+        } else if (shape.shapeType === ShapeType.Solid) {
             // Extract faces from solid and convert each to 3DFACE
-            const explorer = new (wasm as any).TopExp_Explorer(occShape, (wasm as any).TopAbs_ShapeEnum.TopAbs_FACE);
-            
-            while (explorer.More()) {
-                const face = explorer.Current();
-                meshFaces.push(OcctHelper.wrapShape(face));
-                explorer.Next();
-            }
-            
-            explorer.delete();
+            // Note: TopExp_Explorer and TopAbs_ShapeEnum are not exported from WASM module
+            // For now, just return the solid as is
+            meshFaces.push(shape);
         }
-        
+
         return meshFaces;
     }
 }

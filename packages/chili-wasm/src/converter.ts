@@ -5,8 +5,8 @@ import {
     type Deletable,
     EditableShapeNode,
     type FolderNode,
-    gc,
     GroupNode,
+    gc,
     type IDisposable,
     type IDocument,
     type IShape,
@@ -123,16 +123,12 @@ export class OccShapeConverter implements IShapeConverter {
     }
 
     convertFromDXF(document: IDocument, dxf: Uint8Array): Result<FolderNode> {
-        return this.converterFromData(document, dxf, wasm.Converter.convertFromDxf);
+        // DXF conversion is not yet implemented in the WASM module
+        return Result.err("DXF import is not yet implemented");
     }
 
     convertToDXF(...shapes: IShape[]): Result<string> {
-        const occShapes = shapes.map((shape) => {
-            if (shape instanceof OccShape) {
-                return shape.shape;
-            }
-            throw new Error("Shape is not an OccShape");
-        });
-        return Result.ok(wasm.Converter.convertToDxf(occShapes));
+        // DXF conversion is not yet implemented in the WASM module
+        return Result.err("DXF export is not yet implemented");
     }
 }

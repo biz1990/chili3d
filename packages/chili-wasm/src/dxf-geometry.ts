@@ -1,7 +1,7 @@
 // Part of the Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
 
-import { Result, type IShape, type XYZ } from "chili-core";
+import { type IShape, Result, ShapeType, type XYZ } from "chili-core";
 import { DxfEditor } from "./dxf-editor";
 import { ShapeFactory } from "./factory";
 import { OcctHelper } from "./helper";
@@ -21,8 +21,8 @@ export class DxfGeometryOperations {
     /**
      * Offset a wire/edge by a specified distance
      */
-    offset(shape: IShape, distance: number, side: 'left' | 'right' = 'left'): Result<IShape> {
-        if (shape.shapeType !== "edge" && shape.shapeType !== "wire") {
+    offset(shape: IShape, distance: number, side: "left" | "right" = "left"): Result<IShape> {
+        if (shape.shapeType !== ShapeType.Edge && shape.shapeType !== ShapeType.Wire) {
             return Result.err("Offset operation only supports edges and wires");
         }
 
@@ -39,8 +39,8 @@ export class DxfGeometryOperations {
     /**
      * Extend an edge to intersect with another edge
      */
-    extend(edge1: IShape, edge2: IShape, extendType: 'line' | 'arc' = 'line'): Result<IShape> {
-        if (edge1.shapeType !== "edge" || edge2.shapeType !== "edge") {
+    extend(edge1: IShape, edge2: IShape, extendType: "line" | "arc" = "line"): Result<IShape> {
+        if (edge1.shapeType !== ShapeType.Edge || edge2.shapeType !== ShapeType.Edge) {
             return Result.err("Extend operation requires two edges");
         }
 
@@ -58,7 +58,7 @@ export class DxfGeometryOperations {
      * Trim one edge against another edge
      */
     trim(edgeToTrim: IShape, trimEdge: IShape): Result<IShape> {
-        if (edgeToTrim.shapeType !== "edge" || trimEdge.shapeType !== "edge") {
+        if (edgeToTrim.shapeType !== ShapeType.Edge || trimEdge.shapeType !== ShapeType.Edge) {
             return Result.err("Trim operation requires two edges");
         }
 
@@ -84,7 +84,7 @@ export class DxfGeometryOperations {
             // Create a compound shape to hold all shapes
             // This is a simplified implementation
             // In a real implementation, this would properly connect the edges
-            const occShapes = shapes.map(shape => (shape as any).shape);
+            const occShapes = shapes.map((shape) => (shape as any).shape);
             const compound = (this.factory as any).createCompound(occShapes);
             return Result.ok(OcctHelper.wrapShape(compound));
         } catch (error) {
@@ -96,7 +96,7 @@ export class DxfGeometryOperations {
      * Explode a wire into individual edges
      */
     explode(wire: IShape): Result<IShape[]> {
-        if (wire.shapeType !== "wire") {
+        if (wire.shapeType !== ShapeType.Wire) {
             return Result.err("Explode operation requires a wire");
         }
 
@@ -113,7 +113,7 @@ export class DxfGeometryOperations {
      * Project a wire onto a plane
      */
     projectToPlane(wire: IShape, planeOrigin: XYZ, planeNormal: XYZ): Result<IShape> {
-        if (wire.shapeType !== "wire") {
+        if (wire.shapeType !== ShapeType.Wire) {
             return Result.err("Project operation requires a wire");
         }
 
@@ -130,7 +130,7 @@ export class DxfGeometryOperations {
      * Create a sketch from a wire
      */
     wireToSketch(wire: IShape): Result<IShape> {
-        if (wire.shapeType !== "wire") {
+        if (wire.shapeType !== ShapeType.Wire) {
             return Result.err("Wire to sketch conversion requires a wire");
         }
 
